@@ -40,7 +40,7 @@ http.listen(3000, function(){
 })
 
 io.on('connection', function(socket){
-	players.push({socket:socket, id:socket.id, hand:[]})
+	players.push({socket:socket, id:socket.id, hand:[], rank:null})
 	console.log(players.length)
 
 	socket.emit('get id', socket.id)

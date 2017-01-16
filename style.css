@@ -13,6 +13,25 @@ body {
   background-color: #49a074;
 }
 
+#waiting{
+	position: fixed;
+	width: 100%;
+	text-align: center;
+	height: 100%;
+	top: 40%;
+	font-style: italic;
+	font-family: 'Lobster Two';
+	font-weight: 700;
+	font-size: 5em;
+	color: white;
+	text-shadow: -3px 3px 15px black;
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	cursor: default;
+}
+
 #background-text{
 	position: fixed;
 	width: 100%;
