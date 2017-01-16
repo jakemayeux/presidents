@@ -56,11 +56,17 @@ class Card {
 }
 
 new Card(0,0)
+//-------------------------FUNCTIONS-----------------------//
+//-------------------------GAMEPLAY------------------------//
+
+function createPlay(hand)
 
 function toggleSelected(e){
 	console.log(e)
+
 }
 
+//---------------------------RENDERING---------------------//
 function renderCards(cards){
 	removeChildren(HAND)
 
