@@ -24,7 +24,7 @@ class Deck {
 	}
 }
 
-const MIN_PLAYERS = 3
+const MIN_PLAYERS = 2
 var gamestate = 0
 
 var players = new Array()
@@ -67,6 +67,8 @@ io.on('connection', function(socket){
 	console.log('connected players: '+players.length)
 })
 
+//-----------------------FUNCTIONS---------------------//
+//-----------------------GAME PROGRESSION-------------------//
 function startGame(){
 	io.emit('game start')
 	console.log('game started')
@@ -87,7 +89,7 @@ function startGame(){
 	}
 	io.emit('player hand size', playersStatus)
 }
-
+//-------------------------SERVER SHIT----------------------------//
 function disconnectPlayer(id){
 	console.log('disconnected player '+id)
 	for(i in players){
@@ -97,3 +99,10 @@ function disconnectPlayer(id){
 		}
 	}
 }
+
+//-------------------GAME LOGIC---------------------//
+
+var tempplay = new Array()
+var play = new Array()
+
+function
