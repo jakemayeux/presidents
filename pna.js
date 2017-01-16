@@ -58,13 +58,23 @@ class Card {
 new Card(0,0)
 //-------------------------FUNCTIONS-----------------------//
 //-------------------------GAMEPLAY------------------------//
-
-function createPlay(hand)
+var tempplay = new Array()
+var play = new Array()
 
 function toggleSelected(e){
-	console.log(e)
+	let card = e.target.parentElement
+	if(tempplay.some(card)){
+		teampplay.slice(tempplay.indexOf(card))
+	}else if(teamplay.some(card)){
+		teampplay.push(card)
+	}
+}
+
+function createPlay(hand){
 
 }
+
+
 
 //---------------------------RENDERING---------------------//
 function renderCards(cards){
@@ -77,6 +87,7 @@ function renderCards(cards){
 	console.log()
 }
 
+//---------------------------LOGIC--------------------------//
 function sortCards(a,b){
 	if(a[0]<b[0]){
 		return -1
