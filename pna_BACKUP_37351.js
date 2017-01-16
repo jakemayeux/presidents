@@ -59,11 +59,12 @@ class Card {
 new Card(0,0)
 //-------------------------FUNCTIONS-----------------------//
 //-------------------------GAMEPLAY------------------------//
+<<<<<<< HEAD
 
 function createPlay(hand){
 
 }
-
+=======
 var tempplay = new Array()
 var play = new Array()
 
@@ -77,6 +78,10 @@ function toggleSelected(e){
 }
 
 function createPlay(hand){
+>>>>>>> a85df8372e0338a59815df9cfcd9d6d2d6c43c3a
+
+function toggleSelected(e){
+	console.log(e.target.parentElement)
 }
 
 
