@@ -3,10 +3,15 @@ const SERVER = 'http://localhost:3000'
 
 var socket = io(SERVER)
 var hand = new Array()
+var id = 0
+var players = new Array()
 
 class Card {
 	constructor(rank, suit){
-		rank++
+		rank += 2
+		if(rank == 14){
+			rank = 1
+		}
 		this.ele = document.createElement('div')
 		this.elc = document.createElement('div')
 		// this.ele.setAttributeNode('onclick', 'window.toggleSelected()')
@@ -62,6 +67,10 @@ function sortCards(a,b){
 	}
 }
 
+socket.on('get id', function(id){
+
+})
+
 socket.on('waiting for players', function(){
 	document.getElementById('message').setAttribute('display', 'box')
 })
@@ -73,5 +82,25 @@ socket.on('game start', function(){
 socket.on('get cards', function(cards){
 	hand = cards
 	renderCards(cards)
-	console.log(cards)
 })
+
+socket.on('player hand size', function(data){
+	for(i of data){
+		if(i.id == socket.id){
+			continue
+		}
+
+		cidid = i.id
+		if(!players.some(containsID)){
+			players[i.id] = {id:i.id, handSize:i.handSize}
+		}else{
+			players[i.id].handSize = i.handSize
+		}
+	}
+	console.log(players)
+})
+
+var cidid = 0
+function containsID(e,i,a){
+	return e.id == cidid
+}
