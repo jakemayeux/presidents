@@ -41,11 +41,16 @@ http.listen(3000, function(){
 
 io.on('connection', function(socket){
 	players.push({socket:socket, id:socket.id})
+	console.log(players.length)
+
+	socket.emit('get id', socket.id)
 
 	let dc = new Array()
 	for(i of players){
+		// console.log(io.sockets[i.id].status)
+		console.log(socket.status)
 		if(!i.socket.status){
-			dc.push(i.id)
+			// dc.push(i.id)
 		}
 	}
 	for(i of dc){
@@ -62,19 +67,27 @@ io.on('connection', function(socket){
 		disconnectPlayer(socket.id)
 	})
 
+	console.log('connected players: '+players.length)
 })
 
 function startGame(){
+	console.log('game started')
 	gamestate = 1
 	for(i in players){
 		let a = deck.deck.length / players.length
 		players[i].hand = deck.deck.slice(i*a, (i+1)*a)
 		players[i].socket.emit('get cards', players[i].hand)
 	}
+
+	let playersStatus = new Array()
+	for(i in players){
+		// playersStatus.push({id:i.id, handSize:i.hand.length})
+	}
+	io.emit('player hand size', playersStatus)
 }
 
 function disconnectPlayer(id){
-	console.log('asdf')
+	console.log('disconnected player '+id)
 	for(i in players){
 		if(players[i].id == id){
 			players.splice(i, 1)
