@@ -42,9 +42,23 @@ function toggleSelected(e){
 	console.log(e)
 }
 
-function renderCards(cards){
-	for(i of cards){
+function renderCards(hand){
+	hand.sort(sortCards)
+	for(i of hand){
 		new Card(i[0], i[1])
+	}
+
+}
+
+function sortCards(a,b){
+	if(a[0]<b[0]){
+		return -1
+	}else if(b[0]<a[0]){
+		return 1
+	}else	if(a[1]<b[1]){
+		return -1
+	}else if(b[1]<a[1]){
+		return 1
 	}
 }
 
