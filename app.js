@@ -5,7 +5,7 @@ var io = require('socket.io')(http)
 class Deck {
 	constructor(){
 		this.deck = new Array()
-		for(var r=0; r<14; r++){
+		for(var r=0; r<13; r++){
 			for(var s=0; s<4; s++){
 				this.deck.push([r,s])
 			}
@@ -40,22 +40,10 @@ http.listen(3000, function(){
 })
 
 io.on('connection', function(socket){
-	players.push({socket:socket, id:socket.id})
+	players.push({socket:socket, id:socket.id, hand:[]})
 	console.log(players.length)
 
 	socket.emit('get id', socket.id)
-
-	let dc = new Array()
-	for(i of players){
-		// console.log(io.sockets[i.id].status)
-		console.log(socket.status)
-		if(!i.socket.status){
-			// dc.push(i.id)
-		}
-	}
-	for(i of dc){
-		disconnectPlayer(i)
-	}
 
 	if(gamestate == 0 && players.length >= MIN_PLAYERS){
 		startGame()
@@ -66,22 +54,36 @@ io.on('connection', function(socket){
 	socket.on('disconnect', function(){
 		disconnectPlayer(socket.id)
 	})
+	socket.on('disconnecting', function(){
+		// disconnectPlayer(socket.id)
+		console.log('disconnecting: '+socket.id)
+	})
+	socket.on('error', function(err){
+		// disconnectPlayer(socket.id)
+		console.log('error: '+socket.id)
+		console.log(err)
+	})
 
 	console.log('connected players: '+players.length)
 })
 
 function startGame(){
+	io.emit('game start')
 	console.log('game started')
 	gamestate = 1
-	for(i in players){
+	for(x in players){
+		let i = players[x]
 		let a = deck.deck.length / players.length
-		players[i].hand = deck.deck.slice(i*a, (i+1)*a)
-		players[i].socket.emit('get cards', players[i].hand)
+		players[x].hand = deck.deck.slice(x*a, (x+1)*a)
+		console.log('playersx hand', players[x].hand)
+		i.socket.emit('get cards', players[x].hand)
+		// console.log('supposed hand', deck.deck.slice(x*a, (x+1)*a))
 	}
 
 	let playersStatus = new Array()
-	for(i in players){
-		// playersStatus.push({id:i.id, handSize:i.hand.length})
+	for(i of players){
+		console.log('hand:', i.hand.length)
+		playersStatus.push({id:i.id, handSize:i.hand.length})
 	}
 	io.emit('player hand size', playersStatus)
 }

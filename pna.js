@@ -1,4 +1,5 @@
 const HAND = document.querySelector('#hand')
+const OTHERS = document.querySelector('#otherHands')
 const SERVER = 'http://localhost:3000'
 
 var socket = io(SERVER)
@@ -7,11 +8,17 @@ var id = 0
 var players = new Array()
 
 class Card {
-	constructor(rank, suit){
-		rank += 2
-		if(rank == 14){
-			rank = 1
+	constructor(rank, suit, parent){
+		if(!parent){
+			parent = HAND
 		}
+		if(rank != null){
+			rank += 2
+			if(rank == 14){
+				rank = 1
+			}
+		}
+
 		this.ele = document.createElement('div')
 		this.elc = document.createElement('div')
 		// this.ele.setAttributeNode('onclick', 'window.toggleSelected()')
@@ -19,6 +26,9 @@ class Card {
 
 		if(typeof(suit) == 'number'){
 			switch(suit){
+				case null:
+					suit = ''
+					break
 				case 0:
 					suit = 'clubs'
 					break
@@ -34,10 +44,14 @@ class Card {
 			}
 		}
 		this.ele.className = 'card rank'+rank+' '+suit
-		this.elc.className = 'face'
+		if(suit == null){
+			this.elc.className = 'back'
+		}else{
+			this.elc.className = 'face'
+		}
 
 
-		HAND.appendChild(this.ele).onclick = toggleSelected
+		parent.appendChild(this.ele).onclick = toggleSelected
 	}
 }
 
@@ -47,12 +61,14 @@ function toggleSelected(e){
 	console.log(e)
 }
 
-function renderCards(hand){
-	hand.sort(sortCards)
+function renderCards(cards){
+	removeChildren(HAND)
+
+	hand = cards.sort(sortCards)
 	for(i of hand){
 		new Card(i[0], i[1])
 	}
-
+	console.log()
 }
 
 function sortCards(a,b){
@@ -67,21 +83,37 @@ function sortCards(a,b){
 	}
 }
 
-socket.on('get id', function(id){
+function renderPlayers(){
+	removeChildren(OTHERS)
+	for(i of players){
+		let idv = document.createElement('div')
+		for(let x=0; x<i.handSize; x++){
+			new Card(null,null,idv)
+		}
+		OTHERS.appendChild(idv)
+	}
+}
 
+socket.on('get id', function(id){
+	//
 })
 
 socket.on('waiting for players', function(){
-	document.getElementById('message').setAttribute('display', 'box')
+	document.getElementById('message').style.display = ''
 })
 
 socket.on('game start', function(){
-	document.getElementById('message').setAttribute('display', 'none')
+	document.getElementById('message').style.display = 'none'
 })
 
 socket.on('get cards', function(cards){
 	hand = cards
 	renderCards(cards)
+})
+
+socket.on('game reset', function(){
+	renderCards([])
+	document.getElementById('message').setAttribute('display', 'box')
 })
 
 socket.on('player hand size', function(data){
@@ -90,17 +122,29 @@ socket.on('player hand size', function(data){
 			continue
 		}
 
-		cidid = i.id
-		if(!players.some(containsID)){
-			players[i.id] = {id:i.id, handSize:i.handSize}
+		fidid = i.id
+		let x = players.find(findID)
+		if(!x){
+			players.push({id:i.id, handSize:i.handSize})
 		}else{
-			players[i.id].handSize = i.handSize
+			players[x].handSize = i.handSize
 		}
 	}
-	console.log(players)
+	renderPlayers()
 })
 
 var cidid = 0
 function containsID(e,i,a){
 	return e.id == cidid
+}
+
+var fidid = 0
+function findID(e,i,a){
+	return e.id == fidid
+}
+
+function removeChildren(e){
+	while(e.hasChildNodes()){
+		e.removeChild(e.lastChild)
+	}
 }
