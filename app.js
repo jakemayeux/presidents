@@ -24,7 +24,7 @@ class Deck {
 	}
 }
 
-const MIN_PLAYERS = 2
+const MIN_PLAYERS = 3
 var gamestate = 0
 
 var players = new Array()
