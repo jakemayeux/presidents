@@ -104,5 +104,3 @@ function disconnectPlayer(id){
 
 var tempplay = new Array()
 var play = new Array()
-
-function

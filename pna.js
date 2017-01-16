@@ -70,11 +70,6 @@ function toggleSelected(e){
 	}
 }
 
-function createPlay(hand){
-
-}
-
-
 
 //---------------------------RENDERING---------------------//
 function renderCards(cards){
@@ -85,6 +80,17 @@ function renderCards(cards){
 		new Card(i[0], i[1])
 	}
 	console.log()
+}
+
+function renderPlayers(){
+	removeChildren(OTHERS)
+	for(i of players){
+		let idv = document.createElement('div')
+		for(let x=0; x<i.handSize; x++){
+			new Card(null,null,idv)
+		}
+		OTHERS.appendChild(idv)
+	}
 }
 
 //---------------------------LOGIC--------------------------//
@@ -100,16 +106,12 @@ function sortCards(a,b){
 	}
 }
 
-function renderPlayers(){
-	removeChildren(OTHERS)
-	for(i of players){
-		let idv = document.createElement('div')
-		for(let x=0; x<i.handSize; x++){
-			new Card(null,null,idv)
-		}
-		OTHERS.appendChild(idv)
+function getPlayType(){
+	if(tempplay.length == 1){
+		
 	}
 }
+
 
 socket.on('get id', function(id){
 	//
