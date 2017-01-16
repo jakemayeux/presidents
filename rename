@@ -1,0 +1,32 @@
+#!/bin/bash
+# renames.sh
+# basic file renamer
+
+criteria=$1
+re_match=$2
+replace=$3
+
+face=1
+suit=1
+
+echo asdf
+#########
+exit
+#########
+echo hello
+
+
+for i in $( ls ./card/ );
+do
+	# echo $i
+	# echo "$face"_"$suit"
+	# echo "./card/"$i "./card/$face"_"$suit"
+	mv "./card/"$i "./card/$face"_"$suit.png"
+
+	if [ $suit = 4 ]; then
+		((suit=1))
+		((face++))
+	else
+		((suit++))
+	fi
+done
