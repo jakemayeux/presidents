@@ -21,7 +21,8 @@ class Card {
 
 		this.ele = document.createElement('div')
 		this.elc = document.createElement('div')
-		// this.ele.setAttributeNode('onclick', 'window.toggleSelected()')
+		this.ele.setAttribute('rank', rank)
+		this.ele.setAttribute('suit', suit)
 		this.ele.appendChild(this.elc)
 
 		if(typeof(suit) == 'number'){
@@ -59,11 +60,12 @@ new Card(0,0)
 //-------------------------FUNCTIONS-----------------------//
 //-------------------------GAMEPLAY------------------------//
 
-function createPlay(hand)
+function createPlay(hand){
+
+}
 
 function toggleSelected(e){
-	console.log(e)
-
+	console.log(e.target.parentElement)
 }
 
 //---------------------------RENDERING---------------------//
@@ -100,6 +102,7 @@ function renderPlayers(){
 	}
 }
 
+//---------------------------SOCKET.IO---------------------//
 socket.on('get id', function(id){
 	//
 })
@@ -137,6 +140,18 @@ socket.on('player hand size', function(data){
 		}
 	}
 	renderPlayers()
+})
+
+socket.on('a players turn', function(id){
+	if(socket.id == id){
+		console.log('your turn')
+	}else{
+
+	}
+})
+
+socket.on('invalid play', function(){
+	console.log('invalid play')
 })
 
 var cidid = 0
