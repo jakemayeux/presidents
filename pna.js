@@ -1,6 +1,7 @@
 const HAND = document.querySelector('#hand')
 const OTHERS = document.querySelector('#otherHands')
 const SERVER = 'http://localhost:3000'
+const MSG = document.querySelector('#message')
 
 var socket = io(SERVER)
 var hand = new Array()
@@ -13,6 +14,8 @@ var play = new Array()
 var myRank = -1
 var canPass = false
 var canPlay = false
+
+var maxSelectable = -1
 
 class Card {
 	constructor(rank, suit, parent){
@@ -66,12 +69,14 @@ class Card {
 new Card(0,0)
 //-------------------------FUNCTIONS-----------------------//
 //-------------------------GAMEPLAY------------------------//
+}
+
 
 function toggleSelected(e){
 	let card = e.target.parentElement
-	if(queue.inclues(card)){
-		queue.slice(queue.indexOf(card))
-	}else if(queue.includes(card)){
+	if(queue.includes(card)){
+		queue.splice(queue.indexOf(card), 1)
+	}else{
 		queue.push(card)
 	}
 }
@@ -231,6 +236,17 @@ function isCardHigher(a, b){
 	}
 }
 
+function message(str){
+	MSG.innerText = str
+}
+
+function selectCards(stype){
+	if(stype == -2){
+		maxSelectable = 2
+	}else if(stype == -1){
+		maxSelectable = 1
+	}
+}
 
 //---------------------------SOCKET.IO---------------------//
 socket.on('get id', function(id){
@@ -323,7 +339,7 @@ socket.on('get rank', function(data){
 })
 
 socket.on('card passing phase', function(){
-
+	message('card passing phase')
 })
 
 socket.on('pass 2', function(){
@@ -341,7 +357,10 @@ socket.on('pass 1', function(){
 })
 
 socket.on('receive 2', function(){
+<<<<<<< HEAD
 	//darken and popup highest two cards to indicate pass
+=======
+>>>>>>> 10d64770aec59b933aa3f4e0d12184726706d0bc
 
 })
 
@@ -349,8 +368,10 @@ socket.on('receive 1', function(){
 
 })
 
-socket.on('receive pass', function(){
-
+socket.on('receive pass', function(cards){
+	hand.push(cards)
+	hand.sort(sortCards)
+	renderCards(hand)
 })
 
 
