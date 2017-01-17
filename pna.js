@@ -10,6 +10,8 @@ var ptype = 0
 var pokerRank = 0
 var tempplay = new Array()
 var play = new Array()
+var myRank = -1
+
 class Card {
 	constructor(rank, suit, parent){
 		if(!parent){
@@ -81,7 +83,8 @@ function toggleSelected(e){
 function renderCards(cards){
 	removeChildren(HAND)
 
-	hand = cards.sort(sortCards)
+	// hand = cards.sort(sortCards)
+	hand = cards
 	for(i of hand){
 		new Card(i[0], i[1])
 	}
@@ -310,6 +313,41 @@ socket.on('client update', function(data){
 	renderPlayers()
 	console.log(data.table)
 })
+
+socket.on('get rank', function(data){
+	if(data.id == socket.id){
+		myRank = data.rank
+	}
+
+	fidid = data.id
+	let x = players.findIndex(findID)
+	players[x].rank = data.rank
+})
+
+socket.on('card passing phase', function(){
+
+})
+
+socket.on('pass 2', function(){
+	//begin pass selection
+})
+
+socket.on('pass 1', function(){
+
+})
+
+socket.on('receive 2', function(){
+	//darken and popup highest two cards to indicate pass
+})
+
+socket.on('receive 1', function(){
+
+})
+
+socket.on('receive pass', function(){
+
+})
+
 
 var cidid = 0
 function containsID(e,i,a){

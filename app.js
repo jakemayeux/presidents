@@ -38,6 +38,14 @@ var gamestate = 0
 var turn = 0
 var lastplay = [[-1,-1]]
 var table = new Array()
+var numOfPasses = 0
+
+var numPlayersOut = 0
+
+var rec2pli = -1
+var rec1pli = -1
+
+var waitingForPass = 0
 
 var players = new Array()
 var deck = new Deck()
@@ -52,7 +60,7 @@ http.listen(3000, function(){
 
 //-----------------------SOCKET HOOKS----------------------//
 io.on('connection', function(socket){
-	players.push({socket:socket, id:socket.id, hand:[], rank:null})
+	players.push({socket:socket, id:socket.id, hand:[], rank:-1})
 	console.log(players.length)
 
 	socket.emit('get id', socket.id)
@@ -77,10 +85,15 @@ io.on('connection', function(socket){
 	})
 
 	socket.on('play cards', function(cards){
+		if(cards.length == 0){
+			numOfPasses++
+			nextTurn()
+		}
 		phcid = socket.id
 		if(!cards.every(playerHasCards)){
 			socket.emit('invalid play')
-			return
+			numOfPasses++
+			nextTurn()
 		}
 		if(isValidPlay(cards, socket)){
 			console.log('valid play')
@@ -96,9 +109,44 @@ io.on('connection', function(socket){
 			}
 			table.push(cards)
 			socket.emit('get cards', players[pli].hand)
+			if(players[pli].hand.length <= 0){
+				players[pli].rank = numPlayersOut
+				io.emit('get rank', {id:socket.id, rank:numPlayersOut})
+				numPlayersOut++
+
+				if(numPlayersOut >= players.length){
+					newRound()
+				}
+			}
+			numOfPasses = 0
+			nextTurn()
 			updateClients()
 		}
 
+	})
+
+	socket.on('pass cards', function(cards){
+		let pli = playerIndexById(socket.id)
+		if(cards.length != 2 - players[pli].rank){
+			return
+		}
+		if(players[pli].rank == 0){
+			let acards = players[rec2pli].hand.splice(-2, 2)
+			players[rec2pli].hand.push(cards)
+			players[rec2pli].socket.emit('receive pass', cards)
+			players[pli].hand.push(acards)
+			players[pli].socket.emit('receive pass', acards)
+		}else if(players[pli].rank == 1){
+			let acards = players[rec1pli].hand.splice(-1, 1)
+			players[rec1pli].hand.push(cards)
+			players[rec1pli].socket.emit('receive pass', cards)
+			players[pli].hand.push(acards)
+			players[pli].socket.emit('receive pass', acards)
+		}
+		waitingForPass--
+		if(waitingForPass == 0){
+			startRound()
+		}
 	})
 
 	console.log('connected players: '+players.length)
@@ -128,7 +176,10 @@ function playerIndexById(id){
 }
 
 function isValidPlay(cards, socket){
-	if(getPlayType(cards) != ptype){
+	let gpt = getPlayType(cards)
+	if(ptype == -1){
+		ptype = gpt
+	}else if(gpt != ptype){
 		socket.emit('incorrect play type')
 		return false
 	}
@@ -287,6 +338,18 @@ function getPokerRank(cards){
 	}
 }
 
+function sortCards(a,b){
+	if(a[0]<b[0]){
+		return -1
+	}else if(b[0]<a[0]){
+		return 1
+	}else	if(a[1]<b[1]){
+		return -1
+	}else if(b[1]<a[1]){
+		return 1
+	}
+}
+
 //-----------------------GAME PROGRESSION-------------------//
 function startGame(){
 	io.emit('game start')
@@ -294,10 +357,15 @@ function startGame(){
 	ptype = 0
 	gamestate = 1
 
+	dealCards()
+	startRound()
+}
+
+function dealCards(){
 	for(x in players){
 		let i = players[x]
 		let a = deck.deck.length / players.length
-		players[x].hand = deck.deck.slice(x*a, (x+1)*a)
+		players[x].hand = deck.deck.slice(x*a,(x+1)*a).sort(sortCards)
 		console.log('playersx hand', players[x].hand)
 		i.socket.emit('get cards', players[x].hand)
 	}
@@ -308,11 +376,10 @@ function startGame(){
 		playersStatus.push({id:i.id, handSize:i.hand.length})
 	}
 	io.emit('player hand size', playersStatus)
+}
 
-	// for(i in players){
-	//
-	// }
-
+function startRound(){
+	gamestate = 1
 	io.emit('a players turn', players[turn].id)
 }
 
@@ -324,6 +391,51 @@ function updateClients(){
 	io.emit('client update', {players:playersStatus, table:table})
 }
 
+function nextTurn(){
+	turn++
+	if(turn > players.length-1){
+		turn = 0
+	}
+	if(players[turn].hand.length == 0){
+		numOfPasses++
+		nextTurn()
+	}
+	if(numOfPasses >= players.length-1){
+		newTrick()
+	}
+	io.emit('a players turn', players[turn].id)
+}
+
+function newTrick(){
+	ptype = -1
+	table = new Array()
+	updateClients()
+}
+
+function newRound(){
+	numPlayersOut = 0
+	gamestate = 2 //card passing phase
+	io.emit('card passing phase')
+	waitingForPass = 0
+	for(x in players){
+		let i = players[x]
+		if(i.rank == 0){
+			i.socket.emit('pass 2')
+			waitingForPass++
+		}else if(i.rank == 1 && players.length > 3){
+			i.socket.emit('pass 1')
+			waitingForPass++
+		}else if(i.rank == players.length-1){
+			i.socket.emit('receive 2')
+			rec2pli = x
+		}else if(i.rank == players.length-2 && players.length > 3){
+			i.socket.emit('receive 1')
+			rec1pli = x
+		}
+	}
+}
+
+
 //-------------------------SERVER SHIT----------------------------//
 function disconnectPlayer(id){
 	console.log('disconnected player '+id)
@@ -334,12 +446,3 @@ function disconnectPlayer(id){
 		}
 	}
 }
-
-//------------------------GAME LOGIC-----------------------------//
-
-// var play = new Array()
-//
-//
-//
-//
-//
