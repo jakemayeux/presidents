@@ -8,9 +8,11 @@ var id = 0
 var players = new Array()
 var ptype = 0
 var pokerRank = 0
-var tempplay = new Array()
+var queue = new Array()
 var play = new Array()
 var myRank = -1
+var canPass = false
+var canPlay = false
 
 class Card {
 	constructor(rank, suit, parent){
@@ -65,17 +67,12 @@ new Card(0,0)
 //-------------------------FUNCTIONS-----------------------//
 //-------------------------GAMEPLAY------------------------//
 
-function createPlay(hand){
-
-}
-
-
 function toggleSelected(e){
 	let card = e.target.parentElement
-	if(tempplay.some(card)){
-		teampplay.slice(tempplay.indexOf(card))
-	}else if(teamplay.some(card)){
-		teampplay.push(card)
+	if(queue.inclues(card)){
+		queue.slice(queue.indexOf(card))
+	}else if(queue.includes(card)){
+		queue.push(card)
 	}
 }
 
@@ -279,8 +276,9 @@ socket.on('player hand size', function(data){
 socket.on('a players turn', function(id){
 	if(socket.id == id){
 		console.log('your turn')
+		canPlay = true
 	}else{
-
+		canPlay = false
 	}
 })
 
@@ -330,14 +328,21 @@ socket.on('card passing phase', function(){
 
 socket.on('pass 2', function(){
 	//begin pass selection
+	canPass = true
+	selectCards(-2)
+	canPass = false
 })
 
 socket.on('pass 1', function(){
+	canPass = true
+	selectCards(-1)
+	canPass = false
 
 })
 
 socket.on('receive 2', function(){
 	//darken and popup highest two cards to indicate pass
+
 })
 
 socket.on('receive 1', function(){
@@ -347,6 +352,7 @@ socket.on('receive 1', function(){
 socket.on('receive pass', function(){
 
 })
+
 
 
 var cidid = 0
