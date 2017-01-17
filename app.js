@@ -80,17 +80,22 @@ io.on('connection', function(socket){
 		phcid = socket.id
 		if(!cards.every(playerHasCards)){
 			socket.emit('invalid play')
+			return
 		}
 		if(isValidPlay(cards, socket)){
+			console.log('valid play')
 			let pli = playerIndexById(phcid)
 			for(card of cards){
+				console.log('card', card)
 				for(i in players[pli].hand){
-					if(card[0] == players[pli].hand[0] && card[1] == players[pli].hand[1]){
-						players[pli].hand.splice(i, 1)
+					if(card[0] == players[pli].hand[i][0] && card[1] == players[pli].hand[i][1]){
+						console.log(players[pli].hand.splice(i, 1))
 						break
 					}
 				}
 			}
+			table.push(cards)
+			socket.emit('get cards', players[pli].hand)
 			updateClients()
 		}
 
@@ -102,12 +107,21 @@ io.on('connection', function(socket){
 //-----------------------FUNCTIONS--------------------------//
 var phcid = 0
 function playerHasCards(e,i,a){
-	return players[playerIndexById(phcid)].hand.includes(e)
+	icecard = e
+	// console.log('icecard', e)
+	return players[playerIndexById(phcid)].hand.some(isCardEquivalent)
+}
+
+var icecard = [-1,-1]
+function isCardEquivalent(e,i,a){
+	// console.log('e', e)
+	return icecard[0] == e[0] && icecard[1] == e[1]
 }
 
 function playerIndexById(id){
 	for(i in players){
 		if(id == players[i].id){
+			console.log(i)
 			return i
 		}
 	}
@@ -123,6 +137,8 @@ function isValidPlay(cards, socket){
 		socket.emit('not high enough')
 		return false
 	}
+
+	return true
 }
 
 function isBetterPlay(cards){
@@ -305,7 +321,7 @@ function updateClients(){
 	for(i of players){
 		playersStatus.push({id:i.id, handSize:i.hand.length})
 	}
-	io.emit('table update', {players:playersStatus, table:table})
+	io.emit('client update', {players:playersStatus, table:table})
 }
 
 //-------------------------SERVER SHIT----------------------------//

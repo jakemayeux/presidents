@@ -246,6 +246,7 @@ socket.on('game start', function(){
 })
 
 socket.on('get cards', function(cards){
+	console.log('got cards')
 	hand = cards
 	renderCards(cards)
 })
@@ -262,8 +263,8 @@ socket.on('player hand size', function(data){
 		}
 
 		fidid = i.id
-		let x = players.find(findID)
-		if(!x){
+		let x = players.findIndex(findID)
+		if(x == -1){
 			players.push({id:i.id, handSize:i.handSize})
 		}else{
 			players[x].handSize = i.handSize
@@ -290,6 +291,24 @@ socket.on('not high enough', function(){
 
 socket.on('incorrect play type', function(){
 	console.log('you must follow the play type')
+})
+
+socket.on('client update', function(data){
+	for(i of data.players){
+		if(i.id == socket.id){
+			continue
+		}
+
+		fidid = i.id
+		let x = players.findIndex(findID)
+		if(x == -1){
+			players.push({id:i.id, handSize:i.handSize})
+		}else{
+			players[x].handSize = i.handSize
+		}
+	}
+	renderPlayers()
+	console.log(data.table)
 })
 
 var cidid = 0
