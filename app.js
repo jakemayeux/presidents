@@ -25,11 +25,20 @@ class Deck {
 }
 
 const MIN_PLAYERS = 2
+const PTYPE = [ //play type
+	'single',
+	'double',
+	'triple',
+	'quadruple',
+	'poker'
+]
+
+var ptype = 0
 var gamestate = 0
+var turn = 0
 
 var players = new Array()
 var deck = new Deck()
-
 
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html')
@@ -39,8 +48,9 @@ http.listen(3000, function(){
 	console.log('listening on *:3000')
 })
 
+//-----------------------SOCKET HOOKS----------------------//
 io.on('connection', function(socket){
-	players.push({socket:socket, id:socket.id, hand:[]})
+	players.push({socket:socket, id:socket.id, hand:[], rank:null})
 	console.log(players.length)
 
 	socket.emit('get id', socket.id)
@@ -64,22 +74,49 @@ io.on('connection', function(socket){
 		console.log(err)
 	})
 
+	socket.on('play cards', function(cards){
+		phcid = socket.id
+		if(!cards.every(playerHasCard)){
+			socket.emit('invalid play')
+		}
+		if(isValidPlay(cards)){
+
+		}
+	})
+
 	console.log('connected players: '+players.length)
 })
 
-//-----------------------FUNCTIONS---------------------//
+//-----------------------FUNCTIONS--------------------------//
+var phcid = 0
+function playerHasCards(e,i,a){
+	return players[playerIndexById(phcid)].hand.includes(e)
+}
+
+function playerIndexById(id){
+	for(i in players){
+		if(id == players[i].id){
+			return i
+		}
+	}
+}
+
+function isValidPlay(){
+
+}
+
 //-----------------------GAME PROGRESSION-------------------//
 function startGame(){
 	io.emit('game start')
 	console.log('game started')
 	gamestate = 1
+
 	for(x in players){
 		let i = players[x]
 		let a = deck.deck.length / players.length
 		players[x].hand = deck.deck.slice(x*a, (x+1)*a)
 		console.log('playersx hand', players[x].hand)
 		i.socket.emit('get cards', players[x].hand)
-		// console.log('supposed hand', deck.deck.slice(x*a, (x+1)*a))
 	}
 
 	let playersStatus = new Array()
@@ -88,7 +125,10 @@ function startGame(){
 		playersStatus.push({id:i.id, handSize:i.hand.length})
 	}
 	io.emit('player hand size', playersStatus)
+
+	io.emit('a players turn', players[turn].id)
 }
+
 //-------------------------SERVER SHIT----------------------------//
 function disconnectPlayer(id){
 	console.log('disconnected player '+id)
@@ -100,7 +140,6 @@ function disconnectPlayer(id){
 	}
 }
 
-//-------------------GAME LOGIC---------------------//
+//------------------------GAME LOGIC-----------------------------//
 
-var tempplay = new Array()
 var play = new Array()
