@@ -71,6 +71,7 @@ body {
 	/*-webkit-box-shadow: 0 1px 10px rgba(74, 74, 74, 1);*/
 	box-shadow: 0 0px 3px 2px #427bf6;
 	/*outline: 2px solid #9563d0*/
+	cursor: pointer;
 }
 
 .card {
@@ -85,7 +86,6 @@ body {
   border-radius: 4px;
   -webkit-box-shadow: 0 1px 1px rgba(0,0,0,0.3);
   box-shadow: 0 1px 1px rgba(0,0,0,0.3);
-  cursor: pointer;
   margin-left: -2rem;
 }
 .card:before,

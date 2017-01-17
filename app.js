@@ -34,10 +34,10 @@ const PTYPE = [ //play type
 ]
 
 var ptype = 0
-var pokerRank = 0
 var gamestate = 0
 var turn = 0
-var lastplay = []
+var lastplay = [[-1,-1]]
+var table = new Array()
 
 var players = new Array()
 var deck = new Deck()
@@ -78,12 +78,22 @@ io.on('connection', function(socket){
 
 	socket.on('play cards', function(cards){
 		phcid = socket.id
-		if(!cards.every(playerHasCard)){
+		if(!cards.every(playerHasCards)){
 			socket.emit('invalid play')
 		}
-		if(isValidPlay(cards)){
-
+		if(isValidPlay(cards, socket)){
+			let pli = playerIndexById(phcid)
+			for(card of cards){
+				for(i in players[pli].hand){
+					if(card[0] == players[pli].hand[0] && card[1] == players[pli].hand[1]){
+						players[pli].hand.splice(i, 1)
+						break
+					}
+				}
+			}
+			updateClients()
 		}
+
 	})
 
 	console.log('connected players: '+players.length)
@@ -103,7 +113,7 @@ function playerIndexById(id){
 	}
 }
 
-function isValidPlay(cards){
+function isValidPlay(cards, socket){
 	if(getPlayType(cards) != ptype){
 		socket.emit('incorrect play type')
 		return false
@@ -115,7 +125,7 @@ function isValidPlay(cards){
 	}
 }
 
-function isBetterPlay(){
+function isBetterPlay(cards){
 	if(ptype == 0){
 		if(isCardHigher(cards[0], lastplay[0])){
 			return true
@@ -132,9 +142,8 @@ function isBetterPlay(){
 		if(a < b){
 			return false
 		}if(a == b){
-			pokerRank = b
 			a = getHighCard(cards, true)
-			b = getPokerRank(lastplay, true)
+			b = getHighCard(lastplay, true)
 			if(!isCardHigher(a, b)){
 				return false
 			}
@@ -195,25 +204,72 @@ function isCardHigher(a, b){
 	}else{
 		return false
 	}
-
-
-function isValidPlay(){
-
 }
 
-function getPlayType(){
-	//
+function getPlayType(cards){
+	if(cards.length == 1){
+		return 0
+	}else if(sameRank()){
+		if(cards.length < 5){
+			return cards.length-1
+		}
+	}else if(cards.length == 5){
+		if(getPokerRank(cards) != -1){
+			return 4
+		}
+	}else{
+		return -1
+	}
 }
 
 function sameRank(cards){
-	//
+	for(i of cards){
+	 if(i[0] !== cards[0][0])
+		return false;
+	 }
+	 return true;
 }
 
-function getPokerRank(){
-	//
+function sameSuit(cards){
+	for(i of cards){
+    if(i[1] !== cards[0][1])
+    	return false;
+    }
+    return true;
 }
 
-
+function getPokerRank(cards){
+	if(sameRank(cards)){
+		if(sameSuit(cards)){
+			return 3 //straight flush
+		}
+		return 0 //straight
+	}else if(sameSuit(cards)){
+		return 1 //flush
+	}else{
+		let r1 = -1
+		let r2 = -1
+		let x = 0
+		for(i of cards){
+			if(i[0] == r1){
+				x++
+			}else if(i[0] == r2){
+				x--
+			}else if(r1 == -1){
+				r1 = i[0]
+			}else if(r2 == -1){
+				r2 = i[0]
+			}else{
+				return -1
+			}
+		}
+		if(x == 1 || x == -1){
+			return 2 //full house
+		}else{
+			return -1
+		}
+	}
+}
 
 //-----------------------GAME PROGRESSION-------------------//
 function startGame(){
@@ -237,11 +293,19 @@ function startGame(){
 	}
 	io.emit('player hand size', playersStatus)
 
-	for(i in players){
-
-	}
+	// for(i in players){
+	//
+	// }
 
 	io.emit('a players turn', players[turn].id)
+}
+
+function updateClients(){
+	let playersStatus = new Array()
+	for(i of players){
+		playersStatus.push({id:i.id, handSize:i.hand.length})
+	}
+	io.emit('table update', {players:playersStatus, table:table})
 }
 
 //-------------------------SERVER SHIT----------------------------//
@@ -257,4 +321,9 @@ function disconnectPlayer(id){
 
 //------------------------GAME LOGIC-----------------------------//
 
-var play = new Array()
+// var play = new Array()
+//
+//
+//
+//
+//

@@ -116,70 +116,121 @@ function getPlayType(cards){
 	if(cards.length == 1){
 		return 0
 	}else if(sameRank()){
-		else if(cards.length == 2){
-			return 1
-		}else if(cards.length == 3){
-			return 2
-		}else if(cards.length == 4){
-			return 3
+		if(cards.length < 5){
+			return cards.length-1
 		}
 	}else if(cards.length == 5){
-
+		if(getPokerRank(cards) != -1){
+			return 4
+		}
+	}else{
+		return -1
 	}
-	return null
 }
 
 function sameRank(cards){
 	for(i of cards){
     if(i[0] !== cards[0][0])
-    	return false;
+    	return false
     }
-    return true;
+    return true
 }
 
 function sameSuit(cards){
 	for(i of cards){
     if(i[1] !== cards[0][1])
-    	return false;
+    	return false
     }
-    return true;
+    return true
 }
 
 function getPokerRank(cards){
 	if(sameRank(cards)){
 		if(sameSuit(cards)){
-			return 3
+			return 3 //straight flush
 		}
-		return 0
+		return 0 //straight
 	}else if(sameSuit(cards)){
-		return 1
+		return 1 //flush
 	}else{
-		cards.sort(sortCards)
-		let count1 = 0
-		let count2 = 0
+		let r1 = -1
+		let r2 = -1
+		let x = 0
 		for(i of cards){
-			if(i[0]==cards[0]){
-				count1++
-			}
-			if(i[0]==cards[cards.length-1]){
-				count2++
+			if(i[0] == r1){
+				x++
+			}else if(i[0] == r2){
+				x--
+			}else if(r1 == -1){
+				r1 = i[0]
+			}else if(r2 == -1){
+				r2 = i[0]
+			}else{
+				return -1
 			}
 		}
-		if(count1==2 && count2==3){
+		if(x == 1 || x == -1){
 			return 2
-		}else if(count1==3 && count2==2){
-			return 2
+		}else{
+			return -1
 		}
 	}
 }
 
-function getHighCard(){
-	//
+function getHighCard(cards, fullHouse){
+	let ret = cards[0]
+
+	if(fullHouse){
+		let a = {r:-1,c:0,s:-1}
+		let b = {r:-1,c:0,s:-1}
+		for(i of cards){
+			if(a == -1){
+				a.r = i[0]
+				a.s = i[1]
+			}else if(b == -1){
+				b.r = i[0]
+				b.s = i[1]
+			}
+
+			if(a.r == i[0]){
+				a.c++
+				if(i[1] > a.s){
+					a.s = i[1]
+				}
+			}else if(b.r == i[0]){
+				b.c++
+				if(i[1] > b.s){
+					b.s = i[1]
+				}
+			}
+		}
+		if(a.c == 3){
+			return [a.r,a.s]
+		}else if(b.c == 3){
+			return [b.r,b.s]
+		}else{
+			console.log('something went wrong')
+		}
+	}
+
+	for(i of cards){
+		if(isCardHigher(i, ret)){
+			ret = i
+		}
+	}
+	return ret
 }
 
-function isCardHigher(){
-	//
+function isCardHigher(a, b){
+	if(a[0] > b[0]){
+		return true
+	}else if(a[0] == b[0] && a[0] > b[0]){
+		return true
+	}else{
+		return false
+	}
 }
+
 
 //---------------------------SOCKET.IO---------------------//
 socket.on('get id', function(id){
