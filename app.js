@@ -26,16 +26,18 @@ class Deck {
 
 const MIN_PLAYERS = 2
 const PTYPE = [ //play type
-	0: 'single',
-	1: 'double',
-	2: 'triple',
-	3: 'quadruple',
-	4: 'poker'
+	'single',
+	'double',
+	'triple',
+	'quadruple',
+	'poker'
 ]
 
 var ptype = 0
+var pokerRank = 0
 var gamestate = 0
 var turn = 0
+var lastplay = []
 
 var players = new Array()
 var deck = new Deck()
@@ -101,14 +103,119 @@ function playerIndexById(id){
 	}
 }
 
-function isValidPlay(){
-	// if()
+function isValidPlay(cards){
+	if(getPlayType(cards) != ptype){
+		socket.emit('incorrect play type')
+		return false
+	}
+
+	if(!isBetterPlay(cards)){
+		socket.emit('not high enough')
+		return false
+	}
 }
+
+function isBetterPlay(){
+	if(ptype == 0){
+		if(isCardHigher(cards[0], lastplay[0])){
+			return true
+		}
+	}else if(ptype == 1 || ptype == 2 || ptype == 3){
+		let a = getHighCard(cards)
+		let b = getHighCard(lastplay)
+		if(!isCardHigher(a, b)){
+			return false
+		}
+	}else if(ptype == 4){
+		let a = getPokerRank(cards)
+		let b = getPokerRank(lastplay)
+		if(a < b){
+			return false
+		}if(a == b){
+			pokerRank = b
+			a = getHighCard(cards, true)
+			b = getPokerRank(lastplay, true)
+			if(!isCardHigher(a, b)){
+				return false
+			}
+		}
+	}
+	return true
+}
+
+function getHighCard(cards, fullHouse){
+	let ret = cards[0]
+
+	if(fullHouse){
+		let a = {r:-1,c:0,s:-1}
+		let b = {r:-1,c:0,s:-1}
+		for(i of cards){
+			if(a == -1){
+				a.r = i[0]
+				a.s = i[1]
+			}else if(b == -1){
+				b.r = i[0]
+				b.s = i[1]
+			}
+
+			if(a.r == i[0]){
+				a.c++
+				if(i[1] > a.s){
+					a.s = i[1]
+				}
+			}else if(b.r == i[0]){
+				b.c++
+				if(i[1] > b.s){
+					b.s = i[1]
+				}
+			}
+		}
+		if(a.c == 3){
+			return [a.r,a.s]
+		}else if(b.c == 3){
+			return [b.r,b.s]
+		}else{
+			console.log('something went wrong')
+		}
+	}
+
+	for(i of cards){
+		if(isCardHigher(i, ret)){
+			ret = i
+		}
+	}
+	return ret
+}
+
+function isCardHigher(a, b){
+	if(a[0] > b[0]){
+		return true
+	}else if(a[0] == b[0] && a[0] > b[0]){
+		return true
+	}else{
+		return false
+	}
+}
+
+function getPlayType(){
+	//
+}
+
+function sameRank(cards){
+	//
+}
+
+function getPokerRank(){
+	//
+}
+
+
 
 //-----------------------GAME PROGRESSION-------------------//
 function startGame(){
 	io.emit('game start')
 	console.log('game started')
+	ptype = 0
 	gamestate = 1
 
 	for(x in players){
@@ -125,6 +232,10 @@ function startGame(){
 		playersStatus.push({id:i.id, handSize:i.hand.length})
 	}
 	io.emit('player hand size', playersStatus)
+
+	for(i in players){
+
+	}
 
 	io.emit('a players turn', players[turn].id)
 }

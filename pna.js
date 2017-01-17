@@ -77,6 +77,7 @@ function toggleSelected(e){
 }
 
 function createPlay(hand){
+
 }
 
 
@@ -122,11 +123,11 @@ socket.on('get id', function(id){
 })
 
 socket.on('waiting for players', function(){
-	document.getElementById('message').style.display = ''
+	document.getElementById('waiting').style.display = ''
 })
 
 socket.on('game start', function(){
-	document.getElementById('message').style.display = 'none'
+	document.getElementById('waiting').style.display = 'none'
 })
 
 socket.on('get cards', function(cards){
@@ -136,7 +137,7 @@ socket.on('get cards', function(cards){
 
 socket.on('game reset', function(){
 	renderCards([])
-	document.getElementById('message').setAttribute('display', 'box')
+	document.getElementById('waiting').style.display = 'none'
 })
 
 socket.on('player hand size', function(data){
@@ -166,6 +167,14 @@ socket.on('a players turn', function(id){
 
 socket.on('invalid play', function(){
 	console.log('invalid play')
+})
+
+socket.on('not high enough', function(){
+	console.log('play higher cards')
+})
+
+socket.on('incorrect play type', function(){
+	console.log('you must follow the play type')
 })
 
 var cidid = 0
