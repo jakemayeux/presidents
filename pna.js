@@ -6,7 +6,10 @@ var socket = io(SERVER)
 var hand = new Array()
 var id = 0
 var players = new Array()
-
+var ptype = 0
+var pokerRank = 0
+var tempplay = new Array()
+var play = new Array()
 class Card {
 	constructor(rank, suit, parent){
 		if(!parent){
@@ -64,8 +67,6 @@ function createPlay(hand){
 
 }
 
-var tempplay = new Array()
-var play = new Array()
 
 function toggleSelected(e){
 	let card = e.target.parentElement
@@ -76,12 +77,6 @@ function toggleSelected(e){
 	}
 }
 
-function createPlay(hand){
-
-}
-
-
-
 //---------------------------RENDERING---------------------//
 function renderCards(cards){
 	removeChildren(HAND)
@@ -91,6 +86,17 @@ function renderCards(cards){
 		new Card(i[0], i[1])
 	}
 	console.log()
+}
+
+function renderPlayers(){
+	removeChildren(OTHERS)
+	for(i of players){
+		let idv = document.createElement('div')
+		for(let x=0; x<i.handSize; x++){
+			new Card(null,null,idv)
+		}
+		OTHERS.appendChild(idv)
+	}
 }
 
 //---------------------------LOGIC--------------------------//
@@ -106,15 +112,73 @@ function sortCards(a,b){
 	}
 }
 
-function renderPlayers(){
-	removeChildren(OTHERS)
-	for(i of players){
-		let idv = document.createElement('div')
-		for(let x=0; x<i.handSize; x++){
-			new Card(null,null,idv)
+function getPlayType(cards){
+	if(cards.length == 1){
+		return 0
+	}else if(sameRank()){
+		else if(cards.length == 2){
+			return 1
+		}else if(cards.length == 3){
+			return 2
+		}else if(cards.length == 4){
+			return 3
 		}
-		OTHERS.appendChild(idv)
+	}else if(cards.length == 5){
+
 	}
+	return null
+}
+
+function sameRank(cards){
+	for(i of cards){
+    if(i[0] !== cards[0][0])
+    	return false;
+    }
+    return true;
+}
+
+function sameSuit(cards){
+	for(i of cards){
+    if(i[1] !== cards[0][1])
+    	return false;
+    }
+    return true;
+}
+
+function getPokerRank(cards){
+	if(sameRank(cards)){
+		if(sameSuit(cards)){
+			return 3
+		}
+		return 0
+	}else if(sameSuit(cards)){
+		return 1
+	}else{
+		cards.sort(sortCards)
+		let count1 = 0
+		let count2 = 0
+		for(i of cards){
+			if(i[0]==cards[0]){
+				count1++
+			}
+			if(i[0]==cards[cards.length-1]){
+				count2++
+			}
+		}
+		if(count1==2 && count2==3){
+			return 2
+		}else if(count1==3 && count2==2){
+			return 2
+		}
+	}
+}
+
+function getHighCard(){
+	//
+}
+
+function isCardHigher(){
+	//
 }
 
 //---------------------------SOCKET.IO---------------------//

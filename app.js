@@ -195,6 +195,10 @@ function isCardHigher(a, b){
 	}else{
 		return false
 	}
+
+
+function isValidPlay(){
+
 }
 
 function getPlayType(){
@@ -254,5 +258,3 @@ function disconnectPlayer(id){
 //------------------------GAME LOGIC-----------------------------//
 
 var play = new Array()
-
-// function
