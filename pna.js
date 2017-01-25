@@ -2,20 +2,34 @@ const HAND = document.querySelector('#hand')
 const OTHERS = document.querySelector('#otherHands')
 const SERVER = 'http://localhost:3000'
 const MSG = document.querySelector('#message')
+const SUBMIT = document.querySelector('#submit')
+const QUEUE = document.querySelector('#queue')
+const CLEAR = document.querySelector('#clear')
+const PASS = document.querySelector('#pass')
+const TOOLTIP = document.querySelector('#tooltip')
+const TABLE = document.querySelector('#table')
 
 var socket = io(SERVER)
 var hand = new Array()
 var id = 0
 var players = new Array()
+
 var ptype = 0
+var lastplay = [-1,-1]
+
 var pokerRank = 0
 var queue = new Array()
 var play = new Array()
 var myRank = -1
 var maxSelectable = -1
+var turn = -1
+var persistentMessage = ''
+var passCards = 0
+
+var table = new Array()
 
 class Card {
-	constructor(rank, suit, parent){
+	constructor(rank, suit, parent, classStr){
 		if(!parent){
 			parent = HAND
 		}
@@ -28,8 +42,6 @@ class Card {
 
 		this.ele = document.createElement('div')
 		this.elc = document.createElement('div')
-		this.ele.setAttribute('rank', rank)
-		this.ele.setAttribute('suit', suit)
 		this.ele.appendChild(this.elc)
 
 		if(typeof(suit) == 'number'){
@@ -51,7 +63,11 @@ class Card {
 					break
 			}
 		}
-		this.ele.className = 'card rank'+rank+' '+suit
+		if(!!classStr){
+			this.ele.className = classStr
+		}else{
+			this.ele.className = 'card rank'+rank+' '+suit
+		}
 		if(suit == null){
 			this.elc.className = 'back'
 		}else{
@@ -64,24 +80,146 @@ class Card {
 }
 
 new Card(0,0)
+new Card(9,3)
+new Card(4,2)
+new Card(12,2)
+
+// new Card(8,2,TABLE)
+// new Card(3,2,TABLE)
+renderTable(lastplay)
+
+//-----------------------ELEMENT BINDINGS---------------------//
+
+CLEAR.onclick = clearQueue
+SUBMIT.onclick = submitCard
+PASS.onclick = pass
+
+PASS.addEventListener('mouseenter', function(){
+	tooltip('Pass')
+})
+
+PASS.addEventListener('mouseleave', function(){
+	tooltip('')
+})
+
+SUBMIT.addEventListener('mouseenter', function(){
+	tooltip('Play Hand')
+})
+
+SUBMIT.addEventListener('mouseleave', function(){
+	tooltip('')
+})
+
+CLEAR.addEventListener('mouseenter', function(){
+	tooltip('Clear')
+})
+
+CLEAR.addEventListener('mouseleave', function(){
+	tooltip('')
+})
+
+MSG.addEventListener('webkitAnimationEnd', function(){
+	MSG.classList.remove('animate')
+})
+
 //-------------------------FUNCTIONS-----------------------//
 //-------------------------GAMEPLAY------------------------//
 
-function createPlay(hand){
-	
+function pass(){
+	socket.emit('play cards', [])
 }
 
+function submitCard(){
+	if(SUBMIT.classList.contains('valid')){
+		let q = parseQueue(queue)
+		if(passCards > 0){
+			socket.emit('pass cards', q)
+		}else{
+			socket.emit('play cards', q)
+		}
+	}
+}
 
 function toggleSelected(e){
 	let card = e.target.parentElement
-	if(queue.includes(card)){
-		queue.splice(queue.indexOf(card), 1)
+	if(queue.includes(card.className)){
+		queue.splice(queue.indexOf(card.className), 1)
+		document.querySelector('#hand .'+card.className.replace(/ /g, '.')).classList.remove('hidden')
 	}else{
-		queue.push(card)
+		queue.push(card.className)
+		document.querySelector('#hand .'+card.className.replace(/ /g, '.')).classList.add('hidden')
+	}
+	renderQueue(queue)
+
+	// let x = parseQueue
+
+	// for(i in x){
+	// 	// if()
+	// }
+
+	if(queue.length > 0){
+		CLEAR.classList.add('valid')
+	}else{
+		CLEAR.classList.remove('valid')
+	}
+
+	if(isValidPlay(parseQueue(queue))){
+		console.log('valid')
+		SUBMIT.classList.add('valid')
+	}else{
+		SUBMIT.classList.remove('valid')
 	}
 }
 
 //---------------------------RENDERING---------------------//
+function clearQueue(){
+	if(CLEAR.classList.contains('valid')){
+		queue = new Array()
+		for(i of document.querySelectorAll('#hand .hidden')){
+			i.classList.remove('hidden')
+		}
+		renderQueue(queue)
+	}
+	SUBMIT.classList.remove('valid')
+	CLEAR.classList.remove('valid')
+}
+
+function parseQueue(q){
+	let ret = new Array()
+	for(i of q){
+		let r
+		let s
+		let a = i.split(' ')
+		if(a.includes('clubs')){
+			s = 0
+		}else if(a.includes('diamonds')){
+			s = 1
+		}else if(a.includes('hearts')){
+			s = 2
+		}else if(a.includes('spades')){
+			s = 3
+		}else{
+			s = -1
+		}
+		r = parseInt(a[1].substr(4))
+		if(r == 1){
+			r = 14
+		}
+		r -= 2
+		ret.push([r,s])
+	}
+	console.log(ret)
+	return ret
+}
+
+function renderQueue(cards){
+	removeChildren(QUEUE)
+
+	for(i of cards){
+		new Card(null, true, QUEUE, i)
+	}
+}
+
 function renderCards(cards){
 	removeChildren(HAND)
 
@@ -90,7 +228,20 @@ function renderCards(cards){
 	for(i of hand){
 		new Card(i[0], i[1])
 	}
-	console.log()
+}
+
+function renderTable(cards){
+	removeChildren(TABLE)
+	if(cards.length == 0){
+		return
+	}
+	if(cards[0] == -1){
+		return
+	}
+
+	for(i of cards){
+		new Card(i[0], i[1], TABLE)
+	}
 }
 
 function renderPlayers(){
@@ -120,7 +271,7 @@ function sortCards(a,b){
 function getPlayType(cards){
 	if(cards.length == 1){
 		return 0
-	}else if(sameRank()){
+	}else if(sameRank(cards)){
 		if(cards.length < 5){
 			return cards.length-1
 		}
@@ -128,14 +279,13 @@ function getPlayType(cards){
 		if(getPokerRank(cards) != -1){
 			return 4
 		}
-	}else{
-		return -1
 	}
+	return -1
 }
 
 function sameRank(cards){
 	for(i of cards){
-    if(i[0] !== cards[0][0])
+    if(i[0] != cards[0][0])
     	return false
     }
     return true
@@ -229,7 +379,7 @@ function getHighCard(cards, fullHouse){
 function isCardHigher(a, b){
 	if(a[0] > b[0]){
 		return true
-	}else if(a[0] == b[0] && a[0] > b[0]){
+	}else if(a[0] == b[0] && a[1] > b[1]){
 		return true
 	}else{
 		return false
@@ -238,6 +388,11 @@ function isCardHigher(a, b){
 
 function message(str){
 	MSG.innerText = str
+	MSG.classList.add('animate')
+}
+
+function tooltip(str){
+	TOOLTIP.innerText = str
 }
 
 function selectCards(stype){
@@ -248,13 +403,64 @@ function selectCards(stype){
 	}
 }
 
+function isValidPlay(cards){
+	if(passCards > 0){
+		return cards.length == passCards
+	}
+
+	let gpt = getPlayType(cards)
+	if(ptype == -1){
+		if(gpt != -1){
+			return true
+		}else{
+			return false
+		}
+	}else if(gpt != ptype){
+		return false
+	}
+
+	if(!isBetterPlay(cards)){
+		return false
+	}
+
+	return true
+}
+
+function isBetterPlay(cards){
+	if(ptype == 0){
+		if(isCardHigher(cards[0], lastplay[0])){
+			return true
+		}
+	}else if(ptype == 1 || ptype == 2 || ptype == 3){
+		let a = getHighCard(cards)
+		let b = getHighCard(lastplay)
+		if(!isCardHigher(a, b)){
+			return false
+		}
+	}else if(ptype == 4){
+		let a = getPokerRank(cards)
+		let b = getPokerRank(lastplay)
+		if(a < b){
+			return false
+		}if(a == b){
+			a = getHighCard(cards, true)
+			b = getHighCard(lastplay, true)
+			if(!isCardHigher(a, b)){
+				return false
+			}
+		}
+	}
+	return true
+}
+
 //---------------------------SOCKET.IO---------------------//
 socket.on('get id', function(id){
 	//
 })
 
 socket.on('waiting for players', function(){
-	document.getElementById('waiting').style.display = ''
+	// document.getElementById('waiting').style.display = ''
+	message('Waiting for players to start the game')
 })
 
 socket.on('game start', function(){
@@ -262,6 +468,7 @@ socket.on('game start', function(){
 })
 
 socket.on('get cards', function(cards){
+	clearQueue()
 	console.log('got cards')
 	hand = cards
 	renderCards(cards)
@@ -291,10 +498,13 @@ socket.on('player hand size', function(data){
 
 socket.on('a players turn', function(id){
 	if(socket.id == id){
-		console.log('your turn')
+		message('Your Turn')
+		PASS.classList.add('valid')
 	}else{
-
+		message(id+"'s turn")
+		PASS.classList.remove('valid')
 	}
+	turn = id
 })
 
 socket.on('invalid play', function(){
@@ -324,7 +534,18 @@ socket.on('client update', function(data){
 		}
 	}
 	renderPlayers()
-	console.log(data.table)
+	table = data.table
+	lastplay = data.table[data.table.length-1]
+	if(typeof(lastplay) == 'undefined'){
+		lastplay = [-1,-1]
+		ptype = -1
+	}else if(lastplay.length == 0){
+		lastplay = [-1,-1]
+		ptype = -1
+	}else{
+		ptype = getPlayType(lastplay)
+	}
+	renderTable(lastplay)
 })
 
 socket.on('get rank', function(data){
@@ -342,22 +563,25 @@ socket.on('card passing phase', function(){
 })
 
 socket.on('pass 2', function(){
-
+	message('Pass 2 Cards to the Asshole')
+	passCards = 2
 })
 
 socket.on('pass 1', function(){
-
+	message('Pass 1 Card to the Vice-Asshole')
+	passCards = 1
 })
 
 socket.on('receive 2', function(){
-
+	message('Waiting to Receive Cards from President')
 })
 
 socket.on('receive 1', function(){
-
+	message('Waiting to Receive Card from Vice-President')
 })
 
 socket.on('receive pass', function(cards){
+	message('Cards Received from Pass')
 	hand.push(cards)
 	hand.sort(sortCards)
 	renderCards(hand)

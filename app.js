@@ -24,7 +24,7 @@ class Deck {
 	}
 }
 
-const MIN_PLAYERS = 2
+const MIN_PLAYERS = 3
 const PTYPE = [ //play type
 	'single',
 	'double',
@@ -61,7 +61,7 @@ http.listen(3000, function(){
 //-----------------------SOCKET HOOKS----------------------//
 io.on('connection', function(socket){
 	players.push({socket:socket, id:socket.id, hand:[], rank:-1})
-	console.log(players.length)
+	// console.log(players.length)
 
 	socket.emit('get id', socket.id)
 
@@ -74,21 +74,25 @@ io.on('connection', function(socket){
 	socket.on('disconnect', function(){
 		disconnectPlayer(socket.id)
 	})
+
 	socket.on('disconnecting', function(){
 		// disconnectPlayer(socket.id)
 		console.log('disconnecting: '+socket.id)
 	})
+
 	socket.on('error', function(err){
 		// disconnectPlayer(socket.id)
-		console.log('error: '+socket.id)
-		console.log(err)
+		console.log('error id: '+socket.id)
+		console.log('error msg:', err)
 	})
 
 	socket.on('play cards', function(cards){
 		if(cards.length == 0){
+			console.log('passed')
 			numOfPasses++
 			nextTurn()
 		}
+		console.log('cards:', cards)
 		phcid = socket.id
 		if(!cards.every(playerHasCards)){
 			socket.emit('invalid play')
@@ -99,15 +103,16 @@ io.on('connection', function(socket){
 			console.log('valid play')
 			let pli = playerIndexById(phcid)
 			for(card of cards){
-				console.log('card', card)
+				// console.log('card', card)
 				for(i in players[pli].hand){
 					if(card[0] == players[pli].hand[i][0] && card[1] == players[pli].hand[i][1]){
-						console.log(players[pli].hand.splice(i, 1))
+						players[pli].hand.splice(i, 1)
 						break
 					}
 				}
 			}
 			table.push(cards)
+			lastplay = cards
 			socket.emit('get cards', players[pli].hand)
 			if(players[pli].hand.length <= 0){
 				players[pli].rank = numPlayersOut
@@ -169,7 +174,7 @@ function isCardEquivalent(e,i,a){
 function playerIndexById(id){
 	for(i in players){
 		if(id == players[i].id){
-			console.log(i)
+			// console.log(i)
 			return i
 		}
 	}
@@ -177,8 +182,13 @@ function playerIndexById(id){
 
 function isValidPlay(cards, socket){
 	let gpt = getPlayType(cards)
+	if(gpt == -1){
+		return false
+	}
+	console.log('play type: ', gpt)
 	if(ptype == -1){
 		ptype = gpt
+		return true
 	}else if(gpt != ptype){
 		socket.emit('incorrect play type')
 		return false
@@ -195,7 +205,10 @@ function isValidPlay(cards, socket){
 function isBetterPlay(cards){
 	if(ptype == 0){
 		if(isCardHigher(cards[0], lastplay[0])){
+			console.log(''+cards[0]+' is > than '+lastplay[0])
 			return true
+		}else{
+			return false
 		}
 	}else if(ptype == 1 || ptype == 2 || ptype == 3){
 		let a = getHighCard(cards)
@@ -266,7 +279,7 @@ function getHighCard(cards, fullHouse){
 function isCardHigher(a, b){
 	if(a[0] > b[0]){
 		return true
-	}else if(a[0] == b[0] && a[0] > b[0]){
+	}else if(a[0] == b[0] && a[1] > b[1]){
 		return true
 	}else{
 		return false
@@ -276,7 +289,7 @@ function isCardHigher(a, b){
 function getPlayType(cards){
 	if(cards.length == 1){
 		return 0
-	}else if(sameRank()){
+	}else if(sameRank(cards)){
 		if(cards.length < 5){
 			return cards.length-1
 		}
@@ -362,11 +375,11 @@ function startGame(){
 }
 
 function dealCards(){
+	let a = deck.deck.length / players.length
+	console.log(a)
 	for(x in players){
 		let i = players[x]
-		let a = deck.deck.length / players.length
-		players[x].hand = deck.deck.slice(x*a,(x+1)*a).sort(sortCards)
-		console.log('playersx hand', players[x].hand)
+		players[x].hand = deck.deck.slice(x*a, (parseInt(x)+1)*a).sort(sortCards)
 		i.socket.emit('get cards', players[x].hand)
 	}
 
@@ -398,21 +411,26 @@ function nextTurn(){
 	}
 	if(players[turn].hand.length == 0){
 		numOfPasses++
+		console.log('next turn')
 		nextTurn()
 	}
 	if(numOfPasses >= players.length-1){
+		console.log('new trick')
 		newTrick()
 	}
+	console.log('turn', turn)
 	io.emit('a players turn', players[turn].id)
 }
 
 function newTrick(){
 	ptype = -1
 	table = new Array()
+	numOfPasses = 0
 	updateClients()
 }
 
 function newRound(){
+	dealCards()
 	numPlayersOut = 0
 	gamestate = 2 //card passing phase
 	io.emit('card passing phase')
