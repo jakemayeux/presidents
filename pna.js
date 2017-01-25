@@ -21,6 +21,9 @@ var pokerRank = 0
 var queue = new Array()
 var play = new Array()
 var myRank = -1
+var canPass = false
+var canPlay = false
+
 var maxSelectable = -1
 var turn = -1
 var persistentMessage = ''
@@ -574,6 +577,21 @@ socket.on('pass 1', function(){
 
 socket.on('receive 2', function(){
 	message('Waiting to Receive Cards from President')
+	//begin pass selection
+	canPass = true
+	selectCards(-2)
+	canPass = false
+})
+
+socket.on('pass 1', function(){
+	canPass = true
+	selectCards(-1)
+	canPass = false
+
+})
+
+socket.on('receive 2', function(){
+
 })
 
 socket.on('receive 1', function(){
@@ -586,6 +604,7 @@ socket.on('receive pass', function(cards){
 	hand.sort(sortCards)
 	renderCards(hand)
 })
+
 
 
 var cidid = 0
